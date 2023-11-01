@@ -228,7 +228,7 @@ with tab1:
 
                 #create columns
                 col1, col2 = st.columns(2)
- with col1:
+               with col1:
                     #set feedback buttons
                     if st.button("Yes", type = "primary", on_click=disabled, disabled=st.session_state.disabled, use_container_width = True):
                         feedback_state = update_feedback(datetime.now(), question, "Yes")
