@@ -45,44 +45,11 @@ STYLING = """
             box-shadow: 5px 10px 18px grey;
             padding: 10px;
             border-radius: 10px;
-            margin-top: 20px;import streamlit as st
-import transformers
-import pandas as pd
-import numpy as np
-import torch
-  
-st.markdown("# MATH WORLD")
-
-#MODEL_NAME = "all-MiniLM-L12-v2"
-EMBEDDING_CSV = "embeddings.csv"
-QUESTION_COLUMN_NAME = "Question"
-ANSWER_COLUMN_NAME = "Answer"
-FEEDBACK_CSV = "feedback.csv"
-FEEDBACK_COLUMN_ONE = "Date"
-FEEDBACK_COLUMN_TWO = "Question"
-FEEDBACK_COLUMN_THREE = "Feedback"
-FEEDBACK_COLUMN_FOUR = "Answer Provided"
-
-STYLING = """
-    <style>
-        .about {
-            text-align: justify;
-            box-shadow: 5px 10px 18px grey;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .question {
-            text-align: justify;
-            box-shadow: 5px 10px 18px grey;
-            padding: 10px;
-            border-radius: 10px;
             margin-top: 20px;
- margin-bottom: 40px;
+            margin-bottom: 40px;
         }
 
-        .answers {
+ .answers {
             text-align: justify;
             box-shadow: 5px 10px 18px grey;
             padding: 10px;
@@ -110,8 +77,9 @@ st.markdown(STYLING, unsafe_allow_html=True)
 if 'disabled' not in st.session_state:
     st.session_state.disabled = False
 print(st.session_state)
+
 def disabled():
-    st.session_state.disabled = True
+   st.session_state.disabled = True
 
 #this is to download the transformer model
 #this takes some times
@@ -182,7 +150,8 @@ def update_feedback(interact_date, user_question, user_feedback):
         feedback_data.to_csv(FEEDBACK_CSV, index = False)
 
     feedback_df = pd.read_csv(FEEDBACK_CSV)
- metadata = {}
+
+    metadata = {}
     metadata[FEEDBACK_COLUMN_ONE] = interact_date
     metadata[FEEDBACK_COLUMN_TWO] = user_question
     metadata[FEEDBACK_COLUMN_THREE] = user_feedback
@@ -217,6 +186,7 @@ st.markdown(about_div, unsafe_allow_html = True)
 #create tabs
 tab1, tab2 = st.tabs(["Questions 🧮", "Dashboard 📊"])
 
+
 #tab1
 with tab1:
     #set title
@@ -230,7 +200,7 @@ with tab1:
             <div class="question">
                 <h4>Your Question</h4>
                 <p><strong>{question}<strong></p>
-            </div>
+                    </div>
         """
 
         #set the question
@@ -250,15 +220,15 @@ with tab1:
             #define feedback state
             feedback_state = False
             button_state = True
- with st.sidebar:
+
+            with st.sidebar:
                 st.title("Feedback")
                 st.write("Your feedback is much appreciated for improvemment of the web application.")
                 st.subheader("Are You Satisfied with the Questions You Got?")
 
                 #create columns
                 col1, col2 = st.columns(2)
-
-                with col1:
+ with col1:
                     #set feedback buttons
                     if st.button("Yes", type = "primary", on_click=disabled, disabled=st.session_state.disabled, use_container_width = True):
                         feedback_state = update_feedback(datetime.now(), question, "Yes")
@@ -288,4 +258,3 @@ with tab2:
         plt.ylabel("Count")
         plt.title("Feedback Distribution")
         st.pyplot(chart_fig)
-
