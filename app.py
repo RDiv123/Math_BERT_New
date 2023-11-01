@@ -13,11 +13,17 @@
 # limitations under the License.
 
 import streamlit as st
-import transformers
+from transformers import BertTokenizer, BertModel
+from sentence_transformers import util
 import pandas as pd
 import numpy as np
+from datetime import datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
 import torch
-
+import os
+import time
+  
 st.markdown("# MATH WORLD")
 
 #MODEL_NAME = "all-MiniLM-L12-v2"
@@ -49,7 +55,7 @@ STYLING = """
             margin-bottom: 40px;
         }
 
- .answers {
+        .answers {
             text-align: justify;
             box-shadow: 5px 10px 18px grey;
             padding: 10px;
@@ -79,14 +85,13 @@ if 'disabled' not in st.session_state:
 print(st.session_state)
 
 def disabled():
-   st.session_state.disabled = True
+    st.session_state.disabled = True
 
 #this is to download the transformer model
 #this takes some times
 # this is cached unless otherwise model will download again and again
 @st.cache_resource
 def load_transformer_model():
-    from transformers import BertTokenizer, BertModel
     # Initialize tokenizer and model
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     model = BertModel.from_pretrained('bert-base-uncased')
@@ -96,12 +101,12 @@ def load_transformer_model():
 @st.cache_data
 def load_embeddings():
     embeddings = pd.concat(list(map(pd.read_csv, ["chunk_0.csv", "chunk_1.csv"])), ignore_index = True)
-    return np.array(embeddings.iloc[:,2:].values), embeddings[QUESTION_COLUMN_NAME].to_list(),embeddings[ANSWER_COLUMN_NAME].to_list()
+    return np.array(embeddings.iloc[:,2:].values), embeddings[QUESTION_COLUMN_NAME].to_list(), embeddings[ANSWER_COLUMN_NAME].to_list()
 
 
 #load models
 tokenizer, model = load_transformer_model()
-embeddings, questions_db,answers_db = load_embeddings()
+embeddings, questions_db, answers_db = load_embeddings()
 
 def get_embedding(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
@@ -111,7 +116,7 @@ def get_embedding(text):
     return output.last_hidden_state[:, 0, :].numpy()
 
 
-def get_similar_question(query, num_questions, tokenizer, model, question_embeddings, main_questions,main_answers):
+def get_similar_question(query, num_questions, tokenizer, model, question_embeddings, main_questions, main_answers):
     answers_dict = []
     questions_dict = []
     #embed the query
@@ -127,29 +132,35 @@ def get_similar_question(query, num_questions, tokenizer, model, question_embedd
     #get related question
     for question_index in indexes:
         questions_dict.append(main_questions[question_index])
-        answers_dict.append(main_questions[question_index])
+        answers_dict.append(main_answers[question_index])
 
     return questions_dict, answers_dict
 
 
-def answers_holders(*args,answers=None):
+def answers_holders(*args, answers):
 
     for index, (question, answer) in enumerate(zip(args, answers)):
-        answers_div = f"""
+        question_div = f"""
             <div class="answers">
                 <h5>Similar Question: {index+1}</h5>
-                <p><strong>{questions}</strong></p>
-            </div>
-        """
-        answer_div = f"""
-            <div class="answers">
-                <h5>Answer: {index+1}</h5>
-                <p><strong>{answer}</strong></p>
+                <p><strong>{question}</strong></p>
             </div>
         """
         #set the div
         st.markdown(question_div, unsafe_allow_html = True)
-        st.markdown(answers_div, unsafe_allow_html = True)
+        time.sleep(2)
+        answer = answer.replace('.', '**').replace('####', '**')
+        steps = answer.split('**')
+        for step in steps:
+            if step.strip():
+                answer_div = f"""
+                <div class="step">
+                <p><strong>{step.strip()}</strong></p>
+                </div>
+                """
+                st.markdown(answer_div, unsafe_allow_html = True)
+                time.sleep(2)
+        time.sleep(2)
 
 
 def update_feedback(interact_date, user_question, user_feedback):
@@ -208,7 +219,7 @@ with tab1:
             <div class="question">
                 <h4>Your Question</h4>
                 <p><strong>{question}<strong></p>
-                    </div>
+            </div>
         """
 
         #set the question
@@ -220,7 +231,7 @@ with tab1:
 
         if num_questions:
             #get the similar questions
-            similar_questions, similar_answers = get_similar_question([question], num_questions, tokenizer, model, embeddings, questions_db,answers_db)
+            similar_questions, similar_answers = get_similar_question([question], num_questions, tokenizer, model, embeddings, questions_db, answers_db)
 
             #set the answers
             answers_holders(*similar_questions, answers =similar_answers)
@@ -236,7 +247,7 @@ with tab1:
 
                 #create columns
                 col1, col2 = st.columns(2)
-              
+
                 with col1:
                     #set feedback buttons
                     if st.button("Yes", type = "primary", on_click=disabled, disabled=st.session_state.disabled, use_container_width = True):
